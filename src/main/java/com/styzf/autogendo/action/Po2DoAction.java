@@ -50,10 +50,6 @@ public class Po2DoAction extends AnAction {
     
     private void find(AnActionEvent e) {
         Project project = e.getProject();
-        // 查找指定实现类的
-//        List<DomFileElement<Mapper>> fileElements = DomService.getInstance().getFileElements(Mapper.class, project, GlobalSearchScope.allScope(project));
-//        Collection<PsiClass> psiClassCollection = JavaFullClassNameIndex.getInstance().get(PO, project, GlobalSearchScope.allScope(project));
-//        JavaShortClassNameIndex.getInstance().get("TestPO", project, GlobalSearchScope.allScope(project));
         @NotNull String[] allFilenames = FilenameIndex.getAllFilenames(project);
         List<@NotNull String> poClassNameList = Arrays.stream(allFilenames)
                 .filter(fileName -> fileName.endsWith(PO + JAVA))

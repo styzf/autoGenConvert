@@ -2,6 +2,7 @@ package com.styzf.autogendo.action;
 
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -64,27 +65,30 @@ public class Dto2DoAction extends AnAction {
         var methodStr = "public " + className + "(" + classDto + " " + filedDto + ") {";
         for (PsiField field : allFields) {
             PsiType[] superTypes = field.getType().getSuperTypes();
-            if (TypeUtil.isDO(field.getType())
-                    || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]))) {
-                PsiClass fieldPsiClass = JavaPsiFacade.getInstance(project)
-                        .findClass(field.getType().getCanonicalText(), GlobalSearchScope.projectScope(project));
-                if (Objects.isNull(fieldPsiClass)) {
-                    fieldPsiClass = JavaPsiFacade.getInstance(project)
-                            .findClass(superTypes[0].getCanonicalText(), GlobalSearchScope.projectScope(project));
-                    if (Objects.isNull(fieldPsiClass)) continue;
-                }
-                
-                Query<PsiClass> subClass = ClassInheritorsSearch.search(fieldPsiClass);
-                for (PsiClass subPsiClass : subClass) {
-                    assert subPsiClass != null;
-                    methodStr += "this." + field.getName() + " = "
-                            + "new " + subPsiClass.getName() +
-                            "(" + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "());";
-                    genMethod(project, subPsiClass);
-                }
-            } else {
+            var isDo = TypeUtil.isDO(field.getType())
+                    || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]));
+            if (! isDo) {
                 methodStr += "this." + field.getName() + " = "
                         + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "();";
+                continue;
+            }
+            
+            // 如果是DO的处理逻辑
+            PsiClass fieldPsiClass = JavaPsiFacade.getInstance(project)
+                    .findClass(field.getType().getCanonicalText(), GlobalSearchScope.projectScope(project));
+            if (Objects.isNull(fieldPsiClass)) {
+                fieldPsiClass = JavaPsiFacade.getInstance(project)
+                        .findClass(superTypes[0].getCanonicalText(), GlobalSearchScope.projectScope(project));
+                if (Objects.isNull(fieldPsiClass)) continue;
+            }
+            
+            Query<PsiClass> subClass = ClassInheritorsSearch.search(fieldPsiClass);
+            for (PsiClass subPsiClass : subClass) {
+                assert subPsiClass != null;
+                methodStr += "this." + field.getName() + " = "
+                        + "new " + subPsiClass.getName() +
+                        "(" + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "());";
+                genMethod(project, subPsiClass);
             }
         }
         methodStr += "}";
@@ -119,5 +123,10 @@ public class Dto2DoAction extends AnAction {
             return false;
         }
         return psiFile.getName().endsWith("DO.java");
+    }
+    
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 }
