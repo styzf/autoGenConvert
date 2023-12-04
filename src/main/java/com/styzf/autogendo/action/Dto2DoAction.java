@@ -13,6 +13,7 @@ import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -62,19 +63,28 @@ public class Dto2DoAction extends AnAction {
         var filedDto = StrUtil.lowerFirst(classDto);
         var methodStr = "public " + className + "(" + classDto + " " + filedDto + ") {";
         for (PsiField field : allFields) {
-            methodStr += "this." + field.getName() + " = "
-                    + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "();";
-            if (TypeUtil.isDO(field.getType())) {
+            PsiType[] superTypes = field.getType().getSuperTypes();
+            if (TypeUtil.isDO(field.getType())
+                    || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]))) {
                 PsiClass fieldPsiClass = JavaPsiFacade.getInstance(project)
                         .findClass(field.getType().getCanonicalText(), GlobalSearchScope.projectScope(project));
                 if (Objects.isNull(fieldPsiClass)) {
-                    continue;
+                    fieldPsiClass = JavaPsiFacade.getInstance(project)
+                            .findClass(superTypes[0].getCanonicalText(), GlobalSearchScope.projectScope(project));
+                    if (Objects.isNull(fieldPsiClass)) continue;
                 }
+                
                 Query<PsiClass> subClass = ClassInheritorsSearch.search(fieldPsiClass);
                 for (PsiClass subPsiClass : subClass) {
                     assert subPsiClass != null;
+                    methodStr += "this." + field.getName() + " = "
+                            + "new " + subPsiClass.getName() +
+                            "(" + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "());";
                     genMethod(project, subPsiClass);
                 }
+            } else {
+                methodStr += "this." + field.getName() + " = "
+                        + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "();";
             }
         }
         methodStr += "}";

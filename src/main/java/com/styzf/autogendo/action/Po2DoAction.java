@@ -114,9 +114,8 @@ public class Po2DoAction extends AnAction {
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         if (isDo(psiFile)) {
             e.getPresentation().setText(ShowBundle.message(PO2DO));
-        } else {
-            e.getPresentation().setEnabledAndVisible(false);
         }
+        e.getPresentation().setEnabledAndVisible(false);
     }
     
     private boolean isNotDo(PsiFile psiFile) {
