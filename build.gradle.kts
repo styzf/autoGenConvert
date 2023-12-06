@@ -1,4 +1,7 @@
+import org.gradle.internal.impldep.org.joda.time.LocalDateTime
 import java.net.SocketOptions
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 plugins {
     id("java")
@@ -7,7 +10,8 @@ plugins {
 }
 
 group = "com.styzf"
-version = "1.0-SNAPSHOT"
+
+version = "1.0." +  LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
 
 repositories {
     mavenCentral()

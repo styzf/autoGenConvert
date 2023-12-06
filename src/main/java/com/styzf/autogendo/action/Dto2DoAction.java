@@ -66,7 +66,8 @@ public class Dto2DoAction extends AnAction {
         for (PsiField field : allFields) {
             PsiType[] superTypes = field.getType().getSuperTypes();
             var isDo = TypeUtil.isDO(field.getType())
-                    || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]));
+                    || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]))
+                    || field.getType().getCanonicalText().startsWith("DO");
             if (! isDo) {
                 methodStr += "this." + field.getName() + " = "
                         + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "();";
@@ -96,12 +97,7 @@ public class Dto2DoAction extends AnAction {
         PsiElementFactory elementFactory = PsiElementFactory.getInstance(project);
         PsiMethod method = elementFactory.createMethodFromText(methodStr, psiClass);
         
-        WriteCommandAction.runWriteCommandAction(project, new Runnable() {
-            @Override
-            public void run() {
-                psiClass.add(method);
-            }
-        });
+        WriteCommandAction.runWriteCommandAction(project, (Runnable) () -> psiClass.add(method));
     }
     
     @Override
