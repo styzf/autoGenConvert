@@ -1,5 +1,6 @@
 package com.styzf.autogendo.action;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
@@ -13,8 +14,12 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiImportList;
+import com.intellij.psi.PsiImportStatement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiType;
+import com.intellij.psi.impl.source.PsiImportStatementImpl;
+import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -23,6 +28,8 @@ import com.styzf.autogendo.setting.ShowBundle;
 import com.styzf.autogendo.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static com.styzf.autogendo.constant.Constant.DTO2DO;
@@ -50,10 +57,10 @@ public class Dto2DoAction extends AnAction {
         
         PsiClass psiClass = PsiTreeUtil.getChildOfType(psiFile, PsiClass.class);
         assert psiClass != null;
-        genMethod(project, psiClass);
+        genMethod(project, psiClass, psiFile);
     }
     
-    private static void genMethod(Project project, @NotNull PsiClass psiClass) {
+    private static void genMethod(Project project, @NotNull PsiClass psiClass, @NotNull PsiFile psiFile) {
         PsiField[] allFields = psiClass.getAllFields();
         if (ArrayUtil.isEmpty(allFields)) {
             return;
@@ -85,11 +92,23 @@ public class Dto2DoAction extends AnAction {
             
             Query<PsiClass> subClass = ClassInheritorsSearch.search(fieldPsiClass);
             for (PsiClass subPsiClass : subClass) {
-                assert subPsiClass != null;
+                PsiElementFactory elementFactory = PsiElementFactory.getInstance(project);
+                PsiImportStatement importStatement = elementFactory.createImportStatement(subPsiClass);
+                PsiImportList importList = ((PsiJavaFileImpl) psiFile).getImportList();
+                if (importList != null) {
+                    List<String> importStrList = Arrays.stream(importList.getAllImportStatements())
+                            .map(imp -> ((PsiImportStatementImpl) imp).getQualifiedName())
+                            .toList();
+                    if (! CollUtil.contains(importStrList, importStatement.getQualifiedName())) {
+                        WriteCommandAction.runWriteCommandAction(project,
+                                (Runnable) () -> importList.add(importStatement));
+                    }
+                }
+                
                 methodStr += "this." + field.getName() + " = "
                         + "new " + subPsiClass.getName() +
                         "(" + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "());";
-                genMethod(project, subPsiClass);
+                genMethod(project, subPsiClass, subPsiClass.getContainingFile());
             }
         }
         methodStr += "}";
