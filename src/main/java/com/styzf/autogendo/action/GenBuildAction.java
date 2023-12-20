@@ -2,6 +2,7 @@ package com.styzf.autogendo.action;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ArrayUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -9,38 +10,40 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
-import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiImportList;
-import com.intellij.psi.PsiImportStatement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiType;
-import com.intellij.psi.impl.source.PsiImportStatementImpl;
-import com.intellij.psi.impl.source.PsiJavaFileImpl;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.util.Query;
 import com.styzf.autogendo.setting.ShowBundle;
 import com.styzf.autogendo.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static com.styzf.autogendo.constant.Constant.DTO2DO;
+import static com.styzf.autogendo.constant.Constant.GEN_BUILD;
 
 /**
  * @author styzf
  * @date 2023/12/3 14:23
  */
-public class Dto2DoAction extends AnAction {
+public class GenBuildAction extends AnAction {
     
-    public Dto2DoAction() {
+    private static Set<String> igField = new HashSet<>();
+    
+    static {
+        igField.add("status");
+        igField.add("changedFields");
+        igField.add("deletedChildObjects");
+    }
+    
+    public GenBuildAction() {
         super();
         setEnabledInModalContext(true);
         setInjectedContext(true);
@@ -66,51 +69,43 @@ public class Dto2DoAction extends AnAction {
             return;
         }
         
+        List<String> idNameList = Arrays.stream(allFields)
+                .filter(field -> ArrayUtil.isNotEmpty(field.getAnnotations()))
+                .map(PsiField::getName)
+                .toList();
+        
         var className = psiClass.getName();
-        var classDto = StrUtil.replaceLast(className, "DO", "DTO");
-        var filedDto = StrUtil.lowerFirst(classDto);
-        var methodStr = "public " + className + "(" + classDto + " " + filedDto + ") {";
+        var classPo = StrUtil.replaceLast(className, "DO", "PO");
+        var filedPo = StrUtil.lowerFirst(classPo);
+        var methodStr = "public " + className + " build" + className + "() {" + classPo + " " + filedPo + ";";
+        var builderName = StrUtil.lowerFirst(className)  + "Builder";
+        methodStr += className + ".Builder " + builderName + " = new " + className
+                + ".Builder(";
+        for (String idName : idNameList) {
+            methodStr += filedPo + ".get" + StrUtil.upperFirst(idName) + "(), ";
+        }
+        methodStr = StrUtil.replaceLast(methodStr, ", ", "");
+        methodStr += ");";
+        
+        methodStr += builderName;
         for (PsiField field : allFields) {
+            String fieldName = field.getName();
+            if (igField.contains(fieldName) || fieldName.startsWith("KEY_")) {
+                continue;
+            }
+            
             PsiType[] superTypes = field.getType().getSuperTypes();
             var isDo = TypeUtil.isDO(field.getType())
                     || (ArrayUtil.isNotEmpty(superTypes) && TypeUtil.isDO(superTypes[0]))
                     || field.getType().getCanonicalText().startsWith("DO");
             if (! isDo) {
-                methodStr += "this." + field.getName() + " = "
-                        + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "();";
-                continue;
-            }
-            
-            // 如果是DO的处理逻辑
-            PsiClass fieldPsiClass = JavaPsiFacade.getInstance(project)
-                    .findClass(field.getType().getCanonicalText(), GlobalSearchScope.projectScope(project));
-            if (Objects.isNull(fieldPsiClass)) {
-                fieldPsiClass = JavaPsiFacade.getInstance(project)
-                        .findClass(superTypes[0].getCanonicalText(), GlobalSearchScope.projectScope(project));
-                if (Objects.isNull(fieldPsiClass)) continue;
-            }
-            
-            Query<PsiClass> subClass = ClassInheritorsSearch.search(fieldPsiClass);
-            for (PsiClass subPsiClass : subClass) {
-                PsiElementFactory elementFactory = PsiElementFactory.getInstance(project);
-                PsiImportStatement importStatement = elementFactory.createImportStatement(subPsiClass);
-                PsiImportList importList = ((PsiJavaFileImpl) psiFile).getImportList();
-                if (importList != null) {
-                    List<String> importStrList = Arrays.stream(importList.getAllImportStatements())
-                            .map(imp -> ((PsiImportStatementImpl) imp).getQualifiedName())
-                            .toList();
-                    if (! CollUtil.contains(importStrList, importStatement.getQualifiedName())) {
-                        WriteCommandAction.runWriteCommandAction(project,
-                                (Runnable) () -> importList.add(importStatement));
-                    }
-                }
-                
-                methodStr += "this." + field.getName() + " = "
-                        + "new " + subPsiClass.getName() +
-                        "(" + filedDto + ".get" + StrUtil.upperFirst(field.getName()) + "());";
-                genMethod(project, subPsiClass, subPsiClass.getContainingFile());
+                methodStr += "." + field.getName() + "("
+                        + filedPo + ".get" + StrUtil.upperFirst(field.getName()) + "())\n";
             }
         }
+        methodStr = StrUtil.replaceLast(methodStr, "\n", "");
+        methodStr += ";";
+        methodStr += "\nreturn " + builderName + ".build();";
         methodStr += "}";
         
         PsiElementFactory elementFactory = PsiElementFactory.getInstance(project);
@@ -123,9 +118,10 @@ public class Dto2DoAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         if (isDo(psiFile)) {
-            e.getPresentation().setText(ShowBundle.message(DTO2DO));
+            e.getPresentation().setText(ShowBundle.message(GEN_BUILD));
+        } else {
+            e.getPresentation().setEnabledAndVisible(false);
         }
-        e.getPresentation().setEnabledAndVisible(false);
     }
     
     private boolean isNotDo(PsiFile psiFile) {

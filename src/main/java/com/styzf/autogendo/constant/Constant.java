@@ -8,6 +8,7 @@ package com.styzf.autogendo.constant;
 public interface Constant {
     String PO2DO = "po.2.do";
     String DTO2DO = "dto.2.do";
+    String GEN_BUILD = "gen.build";
     String PO = "PO";
     String JAVA = ".java";
 }

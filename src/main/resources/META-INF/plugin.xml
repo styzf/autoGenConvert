@@ -27,12 +27,18 @@
 
     </extensions>
     <actions>
-        <action id="com.styzf.autogendo"
+        <action id="com.styzf.autogendo.action.Po2DoAction"
                 class="com.styzf.autogendo.action.Po2DoAction"
                 text="Po2Do" description="po转do">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
-        <action id="com.styzf.autogendo.action" class="com.styzf.autogendo.action.Dto2DoAction" text="Dto2DoAction"
+        <action id="com.styzf.autogendo.action.GenBuildAction"
+                class="com.styzf.autogendo.action.GenBuildAction"
+                text="GenBuild" description="自动生成build方法">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="com.styzf.autogendo.action.Dto2DoAction"
+                class="com.styzf.autogendo.action.Dto2DoAction" text="Dto2DoAction"
                 description="Dto2DoAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
