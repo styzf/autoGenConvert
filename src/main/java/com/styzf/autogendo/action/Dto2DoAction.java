@@ -32,8 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static com.styzf.autogendo.constant.Constant.DTO2DO;
-
 /**
  * @author styzf
  * @date 2023/12/3 14:23
@@ -123,7 +121,7 @@ public class Dto2DoAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         if (isDo(psiFile)) {
-            e.getPresentation().setText(ShowBundle.message(DTO2DO));
+            e.getPresentation().setText(ShowBundle.message(null));
         }
         e.getPresentation().setEnabledAndVisible(false);
     }

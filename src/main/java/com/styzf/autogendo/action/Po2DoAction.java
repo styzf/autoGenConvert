@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import static com.styzf.autogendo.constant.Constant.JAVA;
 import static com.styzf.autogendo.constant.Constant.PO;
-import static com.styzf.autogendo.constant.Constant.PO2DO;
 
 /**
  * @author styzf
@@ -109,7 +108,7 @@ public class Po2DoAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         if (isDo(psiFile)) {
-            e.getPresentation().setText(ShowBundle.message(PO2DO));
+            e.getPresentation().setText(ShowBundle.message(null));
         }
         e.getPresentation().setEnabledAndVisible(false);
     }
