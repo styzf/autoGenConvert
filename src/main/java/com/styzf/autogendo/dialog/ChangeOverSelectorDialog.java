@@ -2,15 +2,10 @@ package com.styzf.autogendo.dialog;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.ui.components.JBViewport;
-import com.styzf.autogendo.action.GenBuildAction;
 import com.styzf.autogendo.gen.GenSrc2Target;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 
 public class ChangeOverSelectorDialog extends JDialog {
     private JPanel contentPane;
@@ -71,13 +66,5 @@ public class ChangeOverSelectorDialog extends JDialog {
     private void onCancel() {
         getOwner().dispose();
         dispose();
-    }
-}
-class DummyFrame extends JFrame {
-    DummyFrame(String title) {
-        super(title);
-        setUndecorated(true);
-        setVisible(true);
-        setLocationRelativeTo(null);
     }
 }

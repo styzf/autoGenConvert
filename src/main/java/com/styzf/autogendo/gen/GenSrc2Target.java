@@ -26,6 +26,7 @@ import java.util.Set;
 
 import static com.styzf.autogendo.constant.Constant.BR;
 import static com.styzf.autogendo.constant.Constant.BRACKET;
+import static com.styzf.autogendo.constant.Constant.BUILD;
 import static com.styzf.autogendo.constant.Constant.BUILDER;
 import static com.styzf.autogendo.constant.Constant.COMMA;
 import static com.styzf.autogendo.constant.Constant.DO;
@@ -189,7 +190,7 @@ public class GenSrc2Target {
         }
         methodStr.append(count != 0 ? SEMICOLON : StrUtil.EMPTY).append(BR).append(BR)
                 .append(RETURN).append(SPACE).append(targetClassFiledName).append(BUILDER)
-                .append(DOT).append("build").append(BRACKET).append(SEMICOLON);
+                .append(DOT).append(BUILD).append(BRACKET).append(SEMICOLON);
     }
     
     /**

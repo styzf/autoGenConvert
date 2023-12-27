@@ -31,4 +31,5 @@ public interface Constant {
     String DOT = ".";
     String BUILDER = "Builder";
     String COMMA = ",";
+    String BUILD = "build";
 }
