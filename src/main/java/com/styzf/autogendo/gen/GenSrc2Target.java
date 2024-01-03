@@ -11,10 +11,11 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiParameter;
+import com.intellij.psi.PsiParameterList;
 import com.intellij.psi.impl.java.stubs.index.JavaFullClassNameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
-import org.apache.tools.ant.taskdefs.Get;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,24 +49,26 @@ import static com.styzf.autogendo.constant.Constant.SPACE;
 
 /**
  * 生成器
+ *
  * @author styzf
  * @date 2023/12/27 22:25
  */
 public class GenSrc2Target {
     
-    private static Set<String> igField = new HashSet<>();
+    private static final Set<String> IG_FIELD = new HashSet<>();
     
     static {
-        igField.add("status");
-        igField.add("changedFields");
-        igField.add("deletedChildObjects");
+        IG_FIELD.add("status");
+        IG_FIELD.add("changedFields");
+        IG_FIELD.add("deletedChildObjects");
     }
     
     /**
      * 生成
-     * @param srcName 源类名
+     *
+     * @param srcName    源类名
      * @param targetName 目标类名
-     * @param e 事件
+     * @param e          事件
      */
     public void gen(String srcName, String targetName, @NotNull AnActionEvent e) {
         if (StrUtil.isBlank(srcName) || StrUtil.isBlank(targetName)) {
@@ -93,7 +96,8 @@ public class GenSrc2Target {
     
     /**
      * 生成方法文本
-     * @param srcClass 源类
+     *
+     * @param srcClass    源类
      * @param targetClass 目标类
      * @return 方法文本
      */
@@ -102,7 +106,6 @@ public class GenSrc2Target {
         var srcClassName = srcClass.getName();
         var targetClassName = targetClass.getName();
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
-        var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         var methodStr = new StringBuilder();
         
         methodStr.append(PRIVATE).append(SPACE).append(targetClassName).append(SPACE);
@@ -175,46 +178,74 @@ public class GenSrc2Target {
         int count = 0;
         for (PsiField field : allFields) {
             var fieldName = field.getName();
-            if (igField.contains(fieldName)
+            if (IG_FIELD.contains(fieldName)
                     || fieldName.startsWith("KEY_")
                     || idNameList.contains(fieldName)) {
                 continue;
             }
-            count ++;
-            methodStr.append(targetClassFiledName).append(BUILDER)
-                    .append(DOT).append(fieldName)
+            
+            if (count == 0) {
+                methodStr.append(targetClassFiledName).append(BUILDER);
+            }
+            methodStr.append(DOT).append(fieldName)
                     .append(LEFT_BRACKET)
                     .append(srcClassFiledName)
                     .append(DOT).append(GET).append(StrUtil.upperFirst(fieldName)).append(BRACKET)
-                    .append(RIGHT_BRACKET);
+                    .append(RIGHT_BRACKET).append(BR);
+            
+            count++;
         }
+        methodStr.delete(methodStr.length() - BR.length(), methodStr.length());
         methodStr.append(count != 0 ? SEMICOLON : StrUtil.EMPTY).append(BR).append(BR)
                 .append(RETURN).append(SPACE).append(targetClassFiledName).append(BUILDER)
                 .append(DOT).append(BUILD).append(BRACKET).append(SEMICOLON);
     }
     
     /**
-     *
      * @param targetClass 目标类
-     * @param srcClass 源类
+     * @param srcClass    源类
      */
     private void genNormalMethodBody(PsiClass targetClass,
-                                            PsiClass srcClass,
-                                            StringBuilder methodStr) {
+                                     PsiClass srcClass,
+                                     StringBuilder methodStr) {
         var srcClassName = srcClass.getName();
         var targetClassName = targetClass.getName();
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
         var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         
-        methodStr.append(targetClassName).append(SPACE).append(targetClassFiledName)
-                .append(SPACE).append(EQ).append(SPACE)
-                .append(NEW).append(SPACE).append(targetClassName).append(BRACKET)
-                .append(SEMICOLON);
+        PsiMethod[] constructors = targetClass.getConstructors();
+        PsiMethod constructor = constructors[0];
+        PsiParameterList parameterList = constructor.getParameterList();
+        Set<String> parameterSet = new HashSet<>();
+        if (parameterList.isEmpty()) {
+            methodStr.append(targetClassName).append(SPACE).append(targetClassFiledName)
+                    .append(SPACE).append(EQ).append(SPACE)
+                    .append(NEW).append(SPACE).append(targetClassName).append(BRACKET)
+                    .append(SEMICOLON);
+        } else {
+            methodStr.append(targetClassName).append(SPACE).append(targetClassFiledName)
+                    .append(SPACE).append(EQ).append(SPACE)
+                    .append(NEW).append(SPACE).append(targetClassName).append(LEFT_BRACKET);
+            PsiParameter[] parameters = parameterList.getParameters();
+            for (int i = 0; i < parameters.length; i++) {
+                PsiParameter parameter = parameters[i];
+                String parameterName = parameter.getName();
+                parameterSet.add(parameterName);
+                methodStr.append(srcClassFiledName).append(DOT).append(GET).append(StrUtil.upperFirst(parameterName)).append(BRACKET);
+                if (i == parameters.length - 1) {
+                    methodStr.append(RIGHT_BRACKET).append(SEMICOLON);
+                } else {
+                    methodStr.append(COMMA).append(SPACE);
+                }
+            }
+        }
+        
         PsiField[] allFields = targetClass.getAllFields();
         for (PsiField field : allFields) {
             var fieldName = field.getName();
-            if (igField.contains(fieldName)
-                    || fieldName.startsWith("KEY_")) {
+            if (IG_FIELD.contains(fieldName)
+                    || fieldName.startsWith("KEY_")
+                    || parameterSet.contains(fieldName)) {
                 continue;
             }
             fieldName = StrUtil.upperFirst(fieldName);
@@ -232,6 +263,7 @@ public class GenSrc2Target {
     
     /**
      * 根据类名进行搜索
+     *
      * @param className 类名
      * @return 搜索到的类名
      */
@@ -248,6 +280,7 @@ public class GenSrc2Target {
     
     /**
      * 是否用构造者模式进行创建
+     *
      * @param className 类名
      * @return 是否用构造者模式进行创建
      */
@@ -257,6 +290,7 @@ public class GenSrc2Target {
     
     /**
      * 是否以DO结尾
+     *
      * @param className 类名
      * @return 是否以DO结尾
      */
@@ -266,6 +300,7 @@ public class GenSrc2Target {
     
     /**
      * 是否以PO结尾
+     *
      * @param className 类名
      * @return 是否以PO结尾
      */
@@ -275,6 +310,7 @@ public class GenSrc2Target {
     
     /**
      * 是否以DTO结尾
+     *
      * @param className 类名
      * @return 是否以DTO结尾
      */
