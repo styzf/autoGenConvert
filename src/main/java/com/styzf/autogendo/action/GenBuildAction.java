@@ -21,7 +21,7 @@ import com.intellij.psi.impl.java.stubs.index.JavaShortClassNameIndex;
 import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
-import com.styzf.autogendo.setting.ShowBundle;
+import com.styzf.autogendo.util.ShowBundle;
 import com.styzf.autogendo.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,6 +41,7 @@ import static com.styzf.autogendo.constant.Constant.GEN_BUILD;
  * @author styzf
  * @date 2023/12/3 14:23
  */
+@Deprecated
 public class GenBuildAction extends AnAction {
     
     private static final String IMPORT = "import ";

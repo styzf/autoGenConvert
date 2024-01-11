@@ -13,8 +13,8 @@ public class ChangeOverSelectorDialog extends JDialog {
     private JButton buttonCancel;
     private JTextField textFieldSrc;
     private JTextField textFieldTarget;
-    private JLabel labelPo;
-    private JLabel labelDto;
+    private JLabel labelSrc;
+    private JLabel labelTarget;
     private AnActionEvent e;
     
     public ChangeOverSelectorDialog(AnActionEvent e) {
@@ -60,11 +60,9 @@ public class ChangeOverSelectorDialog extends JDialog {
         String targetName = textFieldTarget.getText();
         new GenSrc2Target().gen(srcName, targetName, e);
         getOwner().dispose();
-        dispose();
     }
     
     private void onCancel() {
         getOwner().dispose();
-        dispose();
     }
 }

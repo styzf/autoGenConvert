@@ -16,6 +16,7 @@ import com.intellij.psi.PsiParameterList;
 import com.intellij.psi.impl.java.stubs.index.JavaFullClassNameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
+import com.styzf.autogendo.setting.GenSettingsState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +25,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.styzf.autogendo.constant.Constant.BR;
 import static com.styzf.autogendo.constant.Constant.BRACKET;
@@ -54,15 +58,8 @@ import static com.styzf.autogendo.constant.Constant.SPACE;
  * @date 2023/12/27 22:25
  */
 public class GenSrc2Target {
-    
-    private static final Set<String> IG_FIELD = new HashSet<>();
-    
-    static {
-        IG_FIELD.add("status");
-        IG_FIELD.add("changedFields");
-        IG_FIELD.add("deletedChildObjects");
-    }
-    
+    private Pattern excludePattern = GenSettingsState.getInstance().excludePattern;
+    private Pattern includePattern = GenSettingsState.getInstance().includePattern;
     /**
      * 生成
      *
@@ -154,10 +151,10 @@ public class GenSrc2Target {
         var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         
         PsiField[] allFields = targetClass.getAllFields();
-        List<String> idNameList = Arrays.stream(allFields)
+        Set<String> idNameSet = Arrays.stream(allFields)
                 .filter(field -> ArrayUtil.isNotEmpty(field.getAnnotations()))
                 .map(PsiField::getName)
-                .toList();
+                .collect(Collectors.toSet());
         
         methodStr.append(targetClassName).append(DOT).append(BUILDER).append(SPACE)
                 .append(targetClassFiledName).append(BUILDER).append(SPACE)
@@ -165,12 +162,12 @@ public class GenSrc2Target {
                 .append(NEW).append(SPACE).append(targetClassName).append(DOT).append(BUILDER)
                 .append(LEFT_BRACKET);
         
-        for (String idName : idNameList) {
+        for (String idName : idNameSet) {
             idName = StrUtil.upperFirst(idName);
             methodStr.append(srcClassFiledName).append(DOT).append(GET).append(idName).append(BRACKET)
                     .append(COMMA).append(SPACE);
         }
-        if (CollUtil.isNotEmpty(idNameList)) {
+        if (CollUtil.isNotEmpty(idNameSet)) {
             methodStr.deleteCharAt(methodStr.length() - 2);
         }
         methodStr.append(RIGHT_BRACKET).append(SEMICOLON);
@@ -178,9 +175,7 @@ public class GenSrc2Target {
         int count = 0;
         for (PsiField field : allFields) {
             var fieldName = field.getName();
-            if (IG_FIELD.contains(fieldName)
-                    || fieldName.startsWith("KEY_")
-                    || idNameList.contains(fieldName)) {
+            if (isContinue(fieldName, idNameSet)) {
                 continue;
             }
             
@@ -195,10 +190,29 @@ public class GenSrc2Target {
             
             count++;
         }
-        methodStr.delete(methodStr.length() - BR.length(), methodStr.length());
+        if (count != 0) {
+            methodStr.delete(methodStr.length() - BR.length(), methodStr.length());
+        }
         methodStr.append(count != 0 ? SEMICOLON : StrUtil.EMPTY).append(BR).append(BR)
                 .append(RETURN).append(SPACE).append(targetClassFiledName).append(BUILDER)
                 .append(DOT).append(BUILD).append(BRACKET).append(SEMICOLON);
+    }
+    
+    /**
+     * 是否跳过当前字段生成
+     * @param fieldName 字段名称
+     * @param excludeSet 需要排除生成的set
+     * @return true 跳过，当前字段不需要生成 false 不跳过，当前字段需要生成
+     */
+    private boolean isContinue(String fieldName, Set<String> excludeSet) {
+        String excludePatternStr = excludePattern.pattern();
+        String includePatternStr = includePattern.pattern();
+        Matcher excludeMatcher = excludePattern.matcher(fieldName);
+        Matcher includeMatcher = includePattern.matcher(fieldName);
+        
+        return (StrUtil.isNotBlank(excludePatternStr) && excludeMatcher.matches())
+                || (StrUtil.isNotBlank(includePatternStr) && ! includeMatcher.matches())
+                || excludeSet.contains(fieldName);
     }
     
     /**
@@ -243,9 +257,7 @@ public class GenSrc2Target {
         PsiField[] allFields = targetClass.getAllFields();
         for (PsiField field : allFields) {
             var fieldName = field.getName();
-            if (IG_FIELD.contains(fieldName)
-                    || fieldName.startsWith("KEY_")
-                    || parameterSet.contains(fieldName)) {
+            if (isContinue(fieldName, parameterSet)) {
                 continue;
             }
             fieldName = StrUtil.upperFirst(fieldName);

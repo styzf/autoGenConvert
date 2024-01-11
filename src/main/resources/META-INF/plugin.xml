@@ -24,7 +24,11 @@
     <!-- Extension points defined by the plugin.
          Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-
+        <applicationConfigurable parentId="tools"
+                                 instance="com.styzf.autogendo.setting.GenSettingConfigurable"
+                                 id="com.styzf.autogendo.setting.GenSettingConfigurable"
+                                 displayName="生成转换类配置文件"/>
+        <applicationService serviceImplementation="com.styzf.autogendo.setting.GenSettingsState"/>
     </extensions>
     <actions>
         <action id="com.styzf.autogendo.action.GenBuildAction"

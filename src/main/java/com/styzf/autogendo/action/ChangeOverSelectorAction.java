@@ -3,14 +3,11 @@ package com.styzf.autogendo.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.psi.PsiFile;
 import com.styzf.autogendo.dialog.ChangeOverSelectorDialog;
-import com.styzf.autogendo.setting.ShowBundle;
+import com.styzf.autogendo.util.ShowBundle;
 import org.jetbrains.annotations.NotNull;
 
 import static com.styzf.autogendo.constant.Constant.CHANGE_OVER_SELECTOR;
-import static com.styzf.autogendo.constant.Constant.GEN_BUILD;
 
 /**
  * @author styzf
