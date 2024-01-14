@@ -43,6 +43,9 @@ import static com.styzf.autogendo.constant.Constant.LEFT_BRACE;
 import static com.styzf.autogendo.constant.Constant.LEFT_BRACKET;
 import static com.styzf.autogendo.constant.Constant.NEW;
 import static com.styzf.autogendo.constant.Constant.PO;
+import static com.styzf.autogendo.constant.Constant.PRE_DO;
+import static com.styzf.autogendo.constant.Constant.PRE_DTO;
+import static com.styzf.autogendo.constant.Constant.PRE_PO;
 import static com.styzf.autogendo.constant.Constant.PRIVATE;
 import static com.styzf.autogendo.constant.Constant.RETURN;
 import static com.styzf.autogendo.constant.Constant.RIGHT_BRACE;
@@ -50,6 +53,10 @@ import static com.styzf.autogendo.constant.Constant.RIGHT_BRACKET;
 import static com.styzf.autogendo.constant.Constant.SEMICOLON;
 import static com.styzf.autogendo.constant.Constant.SET;
 import static com.styzf.autogendo.constant.Constant.SPACE;
+import static com.styzf.autogendo.constant.Constant.SUF_DO;
+import static com.styzf.autogendo.constant.Constant.SUF_DTO;
+import static com.styzf.autogendo.constant.Constant.SUF_PO;
+import static com.styzf.autogendo.constant.Constant.TO;
 
 /**
  * 生成器
@@ -60,6 +67,7 @@ import static com.styzf.autogendo.constant.Constant.SPACE;
 public class GenSrc2Target {
     private Pattern excludePattern = GenSettingsState.getInstance().excludePattern;
     private Pattern includePattern = GenSettingsState.getInstance().includePattern;
+    
     /**
      * 生成
      *
@@ -68,9 +76,8 @@ public class GenSrc2Target {
      * @param e          事件
      */
     public void gen(String srcName, String targetName, @NotNull AnActionEvent e) {
-        if (StrUtil.isBlank(srcName) || StrUtil.isBlank(targetName)) {
-            return;
-        }
+        if (StrUtil.isBlank(srcName) || StrUtil.isBlank(targetName)) return;
+        
         Project project = e.getProject();
         assert project != null;
         
@@ -85,7 +92,6 @@ public class GenSrc2Target {
         assert currentClass != null;
         
         var methodStr = genMethodStr(srcClass, targetClass);
-        
         PsiElementFactory elementFactory = PsiElementFactory.getInstance(project);
         PsiMethod method = elementFactory.createMethodFromText(methodStr, currentClass);
         WriteCommandAction.runWriteCommandAction(project, (Runnable) () -> currentClass.add(method));
@@ -111,21 +117,21 @@ public class GenSrc2Target {
         assert targetClassName != null;
         
         if (isPO(srcClassName)) {
-            methodStr.append("po2");
+            methodStr.append(PRE_PO).append(TO);
         } else if (isDO(srcClassName)) {
-            methodStr.append("do2");
+            methodStr.append(PRE_DO).append(TO);
         } else if (isDTO(srcClassName)) {
-            methodStr.append("dto2");
+            methodStr.append(PRE_DTO).append(TO);
         } else {
-            methodStr.append("to");
+            methodStr.append(TO);
         }
         
         if (isPO(targetClassName)) {
-            methodStr.append("Po");
+            methodStr.append(SUF_PO);
         } else if (isDO(targetClassName)) {
-            methodStr.append("Do");
+            methodStr.append(SUF_DO);
         } else if (isDTO(targetClassName)) {
-            methodStr.append("Dto");
+            methodStr.append(SUF_DTO);
         } else {
             methodStr.append(targetClassName);
         }
@@ -200,7 +206,8 @@ public class GenSrc2Target {
     
     /**
      * 是否跳过当前字段生成
-     * @param fieldName 字段名称
+     *
+     * @param fieldName  字段名称
      * @param excludeSet 需要排除生成的set
      * @return true 跳过，当前字段不需要生成 false 不跳过，当前字段需要生成
      */
@@ -211,7 +218,7 @@ public class GenSrc2Target {
         Matcher includeMatcher = includePattern.matcher(fieldName);
         
         return (StrUtil.isNotBlank(excludePatternStr) && excludeMatcher.matches())
-                || (StrUtil.isNotBlank(includePatternStr) && ! includeMatcher.matches())
+                || (StrUtil.isNotBlank(includePatternStr) && !includeMatcher.matches())
                 || excludeSet.contains(fieldName);
     }
     

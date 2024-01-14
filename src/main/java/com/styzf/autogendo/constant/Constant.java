@@ -11,10 +11,15 @@ public interface Constant {
     String PO = "PO";
     String DO = "DO";
     String DTO = "DTO";
-    String JAVA = ".java";
+    String PRE_PO = "po";
+    String PRE_DO = "do";
+    String PRE_DTO = "dto";
+    String SUF_PO = "Po";
+    String SUF_DO = "Do";
+    String SUF_DTO = "Dto";
+    String TO = "2";
     String SPACE = " ";
     String PRIVATE = "private";
-    String PUBLIC = "public";
     String LEFT_BRACKET = "(";
     String RIGHT_BRACKET = ")";
     String BRACKET = "()";
