@@ -65,8 +65,14 @@ import static com.styzf.autogendo.constant.Constant.TO;
  * @date 2023/12/27 22:25
  */
 public class GenSrc2Target {
-    private Pattern excludePattern = GenSettingsState.getInstance().excludePattern;
-    private Pattern includePattern = GenSettingsState.getInstance().includePattern;
+    /**
+     * 排除正则表达式
+     */
+    private final Pattern excludePattern = GenSettingsState.getInstance().excludePattern;
+    /**
+     * 包含正则表达式
+     */
+    private final Pattern includePattern = GenSettingsState.getInstance().includePattern;
     
     /**
      * 生成
