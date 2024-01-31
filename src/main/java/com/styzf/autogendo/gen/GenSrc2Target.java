@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -125,7 +125,7 @@ public class GenSrc2Target {
         if (isPO(srcClassName)) {
             methodStr.append(PRE_PO).append(TO);
         } else if (isDO(srcClassName)) {
-            methodStr.append(PRE_DO).append(TO);
+            methodStr.append(PRE_DO).append(TO );
         } else if (isDTO(srcClassName)) {
             methodStr.append(PRE_DTO).append(TO);
         } else {
@@ -146,7 +146,7 @@ public class GenSrc2Target {
                 .append(srcClassName).append(SPACE).append(srcClassFiledName)
                 .append(RIGHT_BRACKET)
                 .append(SPACE).append(LEFT_BRACE);
-        if (isBuilder(targetClassName)) {
+        if (isBuilder(targetClass)) {
             genBuilderMethodBody(targetClass, srcClass, methodStr);
         } else {
             genNormalMethodBody(targetClass, srcClass, methodStr);
@@ -162,10 +162,22 @@ public class GenSrc2Target {
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
         var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         
+        PsiClass[] innerClasses = targetClass.getInnerClasses();
+        PsiClass builderClass = null;
+        for (PsiClass innerClass : innerClasses) {
+            if (StrUtil.contains(innerClass.getName(), BUILDER)) {
+                builderClass = innerClass;
+                break;
+            }
+        }
+        PsiMethod[] constructors = builderClass.getConstructors();
+        PsiMethod constructor = constructors[0];
+        PsiParameterList parameterList = constructor.getParameterList();
+        PsiParameter[] parameters = parameterList.getParameters();
+        
         PsiField[] allFields = targetClass.getAllFields();
-        Set<String> idNameSet = Arrays.stream(allFields)
-                .filter(field -> ArrayUtil.isNotEmpty(field.getAnnotations()))
-                .map(PsiField::getName)
+        Set<String> idNameSet = Arrays.stream(parameters)
+                .map(PsiParameter::getName)
                 .collect(Collectors.toSet());
         
         methodStr.append(targetClassName).append(DOT).append(BUILDER).append(SPACE)
@@ -306,11 +318,22 @@ public class GenSrc2Target {
     /**
      * 是否用构造者模式进行创建
      *
-     * @param className 类名
+     * @param psiClass 类
      * @return 是否用构造者模式进行创建
      */
-    private boolean isBuilder(String className) {
-        return isPO(className) || isDO(className);
+    private boolean isBuilder(PsiClass psiClass) {
+        PsiClass[] innerClasses = psiClass.getInnerClasses();
+        if (ArrayUtil.isEmpty(innerClasses)) {
+            return false;
+        }
+        
+        for (PsiClass innerClass : innerClasses) {
+            if (StrUtil.contains(innerClass.getName(), BUILDER)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**
