@@ -31,11 +31,6 @@
         <applicationService serviceImplementation="com.styzf.autogendo.setting.GenSettingsState"/>
     </extensions>
     <actions>
-        <action id="com.styzf.autogendo.action.GenBuildAction"
-                class="com.styzf.autogendo.action.GenBuildAction"
-                text="GenBuild" description="自动生成build方法">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-        </action>
         <action id="com.styzf.autogendo.action.ChangeOverSelectorAction"
                 class="com.styzf.autogendo.action.ChangeOverSelectorAction" text="选择转换类" description="选择转换类">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
