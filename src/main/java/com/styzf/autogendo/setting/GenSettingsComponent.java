@@ -1,5 +1,6 @@
 package com.styzf.autogendo.setting;
 
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
@@ -26,6 +27,7 @@ public class GenSettingsComponent {
     }
     protected final JBTextField includePattern = new JBTextField();
     protected final JBTextField excludePattern = new JBTextField();
+    private final JBCheckBox judgeIsNullCheckBox = new JBCheckBox(ShowBundle.message("judge.null"));
     
     @NotNull
     protected JPanel commonPanel() {
@@ -38,7 +40,8 @@ public class GenSettingsComponent {
     protected JPanel patternPanel() {
         FormBuilder builder = FormBuilder.createFormBuilder()
                 .addLabeledComponent(new JBLabel(ShowBundle.message("sign.include.regexp")), includePattern, 1, true)
-                .addLabeledComponent(new JBLabel(ShowBundle.message("sign.exclude.regexp")), excludePattern, 1, true);
+                .addLabeledComponent(new JBLabel(ShowBundle.message("sign.exclude.regexp")), excludePattern, 1, true)
+                .addComponent(judgeIsNullCheckBox);
         return builder.getPanel();
     }
     
@@ -63,5 +66,11 @@ public class GenSettingsComponent {
     @NotNull
     public JComponent getPreferredFocusedComponent() {
         return includePattern;
+    }
+    public boolean getJudgeIsNull() {
+        return judgeIsNullCheckBox.isSelected();
+    }
+    public void setJudgeIsNull(boolean judgeIsNull) {
+        judgeIsNullCheckBox.setSelected(judgeIsNull);
     }
 }

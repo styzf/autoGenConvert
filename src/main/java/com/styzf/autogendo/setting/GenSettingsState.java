@@ -19,10 +19,20 @@ import java.util.regex.Pattern;
         storages = @Storage("GenSettingsState.xml")
 )
 public class GenSettingsState implements PersistentStateComponent<GenSettingsState> {
+    /**
+     * 生成方法，包含要生成的字段正则
+     */
     @NotNull
     public transient Pattern includePattern = Pattern.compile("");
+    /**
+     * 生成方法，不包含要生成的字段正则
+     */
     @NotNull
     public transient Pattern excludePattern = Pattern.compile("");
+    /**
+     * 是否生成前置判空方法
+     */
+    public transient boolean judgeIsNull = false;
     
     @NotNull
     public static GenSettingsState getInstance() {
@@ -58,5 +68,13 @@ public class GenSettingsState implements PersistentStateComponent<GenSettingsSta
     
     public void setExcludePattern(@NotNull String excludePattern) {
         this.excludePattern = Pattern.compile(excludePattern);
+    }
+    
+    public boolean isJudgeIsNull() {
+        return judgeIsNull;
+    }
+    
+    public void setJudgeIsNull(boolean judgeIsNull) {
+        this.judgeIsNull = judgeIsNull;
     }
 }

@@ -73,6 +73,10 @@ public class GenSrc2Target {
      * 包含正则表达式
      */
     private final Pattern includePattern = GenSettingsState.getInstance().includePattern;
+    /**
+     * 是否生成前置判空方法
+     */
+    private final boolean judgeIsNull = GenSettingsState.getInstance().judgeIsNull;
     
     /**
      * 生成
@@ -115,6 +119,7 @@ public class GenSrc2Target {
         var srcClassName = srcClass.getName();
         var targetClassName = targetClass.getName();
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
+        var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         var methodStr = new StringBuilder();
         
         methodStr.append(PRIVATE).append(SPACE).append(targetClassName).append(SPACE);
@@ -129,7 +134,7 @@ public class GenSrc2Target {
         } else if (isDTO(srcClassName)) {
             methodStr.append(PRE_DTO).append(TO);
         } else {
-            methodStr.append(TO);
+            methodStr.append(targetClassFiledName).append(TO);
         }
         
         if (isPO(targetClassName)) {
@@ -161,6 +166,8 @@ public class GenSrc2Target {
         var targetClassName = targetClass.getName();
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
         var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
+        
+        genNullReturn(methodStr, srcClass);
         
         PsiClass[] innerClasses = targetClass.getInnerClasses();
         PsiClass builderClass = null;
@@ -202,6 +209,9 @@ public class GenSrc2Target {
             if (isContinue(fieldName, idNameSet)) {
                 continue;
             }
+            if (notSetMethod(fieldName, builderClass)) {
+                continue;
+            }
             
             if (count == 0) {
                 methodStr.append(targetClassFiledName).append(BUILDER);
@@ -220,6 +230,44 @@ public class GenSrc2Target {
         methodStr.append(count != 0 ? SEMICOLON : StrUtil.EMPTY).append(BR).append(BR)
                 .append(RETURN).append(SPACE).append(targetClassFiledName).append(BUILDER)
                 .append(DOT).append(BUILD).append(BRACKET).append(SEMICOLON);
+    }
+    
+    /**
+     * 生成前置判断方法，如果为空，则返回为null
+     * @param methodStr 生成的方法字符串
+     * @param srcClass 源类
+     */
+    private void genNullReturn(StringBuilder methodStr, PsiClass srcClass) {
+        if (! judgeIsNull) {
+            return;
+        }
+        var srcClassName = srcClass.getName();
+        var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
+        methodStr.append("if (")
+                .append("Objects.isNull(")
+                .append(srcClassFiledName)
+                .append(")) {")
+                .append("return null;}");
+    }
+    
+    /**
+     * 是否有set方法
+     * @param fieldName 字段名称
+     * @param targetClass 目标类
+     * @return {@code true} 没有set方法
+     *         {@code false} 有set方法
+     */
+    private boolean notSetMethod(String fieldName, PsiClass targetClass) {
+        PsiMethod[] allMethods = targetClass.getAllMethods();
+        if (ArrayUtil.isEmpty(allMethods)) {
+            return true;
+        }
+        
+        return Arrays.stream(allMethods)
+                .filter(method -> method.getName().equals(fieldName)
+                        || method.getName().equals("set" + StrUtil.upperFirst(fieldName)))
+                .findAny()
+                .isEmpty();
     }
     
     /**
@@ -252,11 +300,22 @@ public class GenSrc2Target {
         var srcClassFiledName = StrUtil.lowerFirst(srcClassName);
         var targetClassFiledName = StrUtil.lowerFirst(targetClassName);
         
+        genNullReturn(methodStr, srcClass);
         PsiMethod[] constructors = targetClass.getConstructors();
-        PsiMethod constructor = constructors[0];
-        PsiParameterList parameterList = constructor.getParameterList();
         Set<String> parameterSet = new HashSet<>();
-        if (parameterList.isEmpty()) {
+        
+        boolean hasParameters = false;
+        PsiParameter[] parameters = null;
+        if (ArrayUtil.isNotEmpty(constructors)) {
+            PsiMethod constructor = constructors[0];
+            PsiParameterList parameterList = constructor.getParameterList();
+            if (! parameterList.isEmpty()) {
+                parameters = parameterList.getParameters();
+                hasParameters = true;
+            }
+        }
+        
+        if (! hasParameters) {
             methodStr.append(targetClassName).append(SPACE).append(targetClassFiledName)
                     .append(SPACE).append(EQ).append(SPACE)
                     .append(NEW).append(SPACE).append(targetClassName).append(BRACKET)
@@ -265,7 +324,6 @@ public class GenSrc2Target {
             methodStr.append(targetClassName).append(SPACE).append(targetClassFiledName)
                     .append(SPACE).append(EQ).append(SPACE)
                     .append(NEW).append(SPACE).append(targetClassName).append(LEFT_BRACKET);
-            PsiParameter[] parameters = parameterList.getParameters();
             for (int i = 0; i < parameters.length; i++) {
                 PsiParameter parameter = parameters[i];
                 String parameterName = parameter.getName();
@@ -285,6 +343,11 @@ public class GenSrc2Target {
             if (isContinue(fieldName, parameterSet)) {
                 continue;
             }
+            
+            if (notSetMethod(fieldName, targetClass)) {
+                continue;
+            }
+            
             fieldName = StrUtil.upperFirst(fieldName);
             methodStr.append(targetClassFiledName)
                     .append(DOT).append(SET).append(fieldName)

@@ -41,6 +41,7 @@ public class GenSettingConfigurable implements Configurable {
         var modified = false;
         modified |= !component.getIncludePattern().equals(settings.getIncludePattern());
         modified |= !component.getExcludePattern().equals(settings.getExcludePattern());
+        modified |= !(component.getJudgeIsNull() == settings.isJudgeIsNull());
         
         return modified;
     }
@@ -50,6 +51,7 @@ public class GenSettingConfigurable implements Configurable {
         @NotNull GenSettingsState settings = GenSettingsState.getInstance();
         settings.setIncludePattern(component.getIncludePattern());
         settings.setExcludePattern(component.getExcludePattern());
+        settings.setJudgeIsNull(component.getJudgeIsNull());
     }
     
     @Override
@@ -57,6 +59,7 @@ public class GenSettingConfigurable implements Configurable {
         @NotNull GenSettingsState settings = GenSettingsState.getInstance();
         component.setIncludePattern(settings.getIncludePattern());
         component.setExcludePattern(settings.getExcludePattern());
+        component.setJudgeIsNull(settings.isJudgeIsNull());
     }
     
     @Override
